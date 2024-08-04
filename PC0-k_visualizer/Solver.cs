@@ -48,7 +48,7 @@
                         if (!path.Equals(workingPath))
                             workList.Add(path);
                 }
-                Console.WriteLine(workList.Count);
+                //Console.WriteLine(workList.Count);
             }
             while (!workList.IsEmpty());
             ;
