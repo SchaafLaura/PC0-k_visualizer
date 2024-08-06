@@ -8,7 +8,8 @@ namespace PC0_k_visualizer.Scenes
     {
         private ScreenSurface _mainSurface;
         private SudokuCellSurface[,] cellSurfaces;
-
+        List<int>[] domains;
+        Solver<int> solver;
         public RootScreen()
         {
             // Create a surface that's the same size as the screen.
@@ -57,10 +58,10 @@ namespace PC0_k_visualizer.Scenes
                 yoff = 0;
             }
 
-            var domains = GetDomains();
+            domains = GetDomains();
             Dictionary<int, Func<int, bool>> unaryConstraints = new();
             Dictionary<VariableList<int>, Func<List<int>, bool>> constraints = new();
-            var board = new int[,]
+            /*var board = new int[,]
             {
                 {0, 0, 0,  0, 0, 0,  0, 0, 0 },
                 {6, 0, 0,  0, 3, 0,  0, 0, 4 },
@@ -73,7 +74,23 @@ namespace PC0_k_visualizer.Scenes
                 {0, 0, 6,  0, 0, 1,  0, 4, 0 },
                 {0, 0, 9,  4, 0, 0,  0, 0, 5 },
                 {0, 0, 0,  0, 0, 0,  1, 7, 0 },
+            };*/
+
+            var board = new int[,]
+            {
+                {0, 0, 0,  2, 0, 0,  0, 9, 0 },
+                {9, 0, 3,  0, 6, 0,  2, 0, 7 },
+                {0, 5, 4,  0, 0, 0,  8, 0, 0 },
+            
+                {4, 7, 0,  0, 0, 0,  0, 1, 0 },
+                {0, 0, 2,  4, 0, 7,  0, 0, 0 },
+                {5, 0, 0,  9, 0, 2,  0, 7, 0 },
+            
+                {0, 4, 0,  0, 0, 9,  7, 0, 0 },
+                {0, 0, 1,  0, 0, 0,  5, 0, 0 },
+                {0, 2, 6,  0, 5, 0,  0, 0, 0 },
             };
+
 
             for (int x = 0; x < 9; x++)
             {
@@ -107,16 +124,20 @@ namespace PC0_k_visualizer.Scenes
                     box = box.RotateThrough();
                 }
             }
-            var solver = new Solver<int>(domains, unaryConstraints, constraints);
-            solver.Solve();
+            solver = new Solver<int>(1, domains, unaryConstraints, constraints);
+            Children.Add(_mainSurface);
+        }
 
-            for(int i = 0; i < 81; i++)
+        public override void Update(TimeSpan delta)
+        {
+            for(int i = 0; i < 2; i++)
+                solver.SolveStep();
+            for (int i = 0; i < 81; i++)
             {
                 var xy = ItoXY(i);
                 cellSurfaces[xy.y, xy.x].DrawDomain(domains[i]);
             }
 
-            Children.Add(_mainSurface);
         }
 
         List<int>[] GetDomains()

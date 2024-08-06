@@ -10,6 +10,7 @@
 
         public void DrawDomain(List<int> domain)
         {
+            this.Clear(new Rectangle(1, 1, Width - 2, Height - 2));
             if (domain.Count != 1)
             {
                 var k = 1;
@@ -19,6 +20,8 @@
                     {
                         if (domain.Contains(k))
                             this.SetCellAppearance(i, j, new ColoredGlyph(Color.Yellow, Color.Transparent, k.ToString()[0]));
+                        else
+                            this.SetCellAppearance(i, j, new ColoredGlyph(Color.Transparent, Color.Transparent, ' '));
                         k++;
                     }
                 }
