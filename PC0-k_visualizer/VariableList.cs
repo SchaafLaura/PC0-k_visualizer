@@ -3,12 +3,23 @@
     internal class VariableList<T> : List<T>
     {
         int hash;
+        public int ID { get; private set;  }
+        public string identifier { get; private set; }
 
-        public VariableList() : base() { }
+        public VariableList() : base() 
+        {
+            ID = -1;
+            identifier = "this wasn't defined :(";
+        }
 
-        public VariableList(VariableList<T> list) : base(list) 
+        public VariableList(VariableList<T> list, int ID, string identifier = "") : base(list) 
         {
             SetHashCode();
+            this.ID = ID;
+            if (identifier == "")
+                this.identifier = ID.ToString();
+            else
+                this.identifier = identifier;
         }
 
         public void SetHashCode()

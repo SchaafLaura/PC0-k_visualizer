@@ -1,5 +1,6 @@
 ﻿using PC0;
 using SadConsole;
+using SadConsole.Input;
 using System.Net.Http.Headers;
 
 namespace PC0_k_visualizer.Scenes
@@ -10,6 +11,8 @@ namespace PC0_k_visualizer.Scenes
         private SudokuCellSurface[,] cellSurfaces;
         List<int>[] domains;
         Solver<int> solver;
+
+        bool solve = false;
         public RootScreen()
         {
             // Create a surface that's the same size as the screen.
@@ -61,7 +64,26 @@ namespace PC0_k_visualizer.Scenes
             domains = GetDomains();
             Dictionary<int, Func<int, bool>> unaryConstraints = new();
             Dictionary<VariableList<int>, Func<List<int>, bool>> constraints = new();
+
+            // ?????????
             /*var board = new int[,]
+            {
+                {7, 0, 0,  0, 4, 0,  0, 0, 3 },
+                {0, 0, 0,  3, 0, 9,  0, 0, 0 },
+                {0, 0, 6,  0, 7, 0,  5, 0, 0 },
+
+                {0, 5, 0,  0, 0, 0,  0, 4, 0 },
+                {6, 0, 3,  0, 9, 0,  2, 0, 7 },
+                {0, 8, 0,  0, 0, 0,  0, 9, 0 },
+
+                {0, 0, 5,  0, 6, 0,  9, 0, 0 },
+                {0, 0, 0,  8, 0, 3,  0, 0, 0 },
+                {8, 0, 0,  0, 5, 0,  0, 0, 1 },
+            };*/
+
+
+            // extreme
+            var board = new int[,]
             {
                 {0, 0, 0,  0, 0, 0,  0, 0, 0 },
                 {6, 0, 0,  0, 3, 0,  0, 0, 4 },
@@ -74,9 +96,10 @@ namespace PC0_k_visualizer.Scenes
                 {0, 0, 6,  0, 0, 1,  0, 4, 0 },
                 {0, 0, 9,  4, 0, 0,  0, 0, 5 },
                 {0, 0, 0,  0, 0, 0,  1, 7, 0 },
-            };*/
+            };
 
-            var board = new int[,]
+            // medium
+            /*var board = new int[,]
             {
                 {0, 0, 0,  2, 0, 0,  0, 9, 0 },
                 {9, 0, 3,  0, 6, 0,  2, 0, 7 },
@@ -89,7 +112,7 @@ namespace PC0_k_visualizer.Scenes
                 {0, 4, 0,  0, 0, 9,  7, 0, 0 },
                 {0, 0, 1,  0, 0, 0,  5, 0, 0 },
                 {0, 2, 6,  0, 5, 0,  0, 0, 0 },
-            };
+            };*/
 
 
             for (int x = 0; x < 9; x++)
@@ -109,15 +132,20 @@ namespace PC0_k_visualizer.Scenes
                 var row = GetRow(i);
                 var column = GetColumn(i);
                 var box = GetBox(i);
+
+                int rowID       = i;
+                int columnID    = i + 9;
+                int boxID       = i + 18;
+
                 for (int j = 0; j < 9; j++)
                 {
-                    var rowKey = new VariableList<int>(row);
-                    var columnKey = new VariableList<int>(column);
-                    var boxKey = new VariableList<int>(box);
+                    var rowKey = new VariableList<int>(row, rowID, "row " + i + ", cell " + j);
+                    var columnKey = new VariableList<int>(column, columnID, "column " + i + ", cell " + j);
+                    var boxKey = new VariableList<int>(box, boxID, "box " + i + ", cell " + j);
 
-                    constraints.Add(rowKey, ContainsAllConstraint());
-                    constraints.Add(columnKey, ContainsAllConstraint());
-                    constraints.Add(boxKey, ContainsAllConstraint());
+                    constraints.Add(rowKey, MutuallyExclusiveConstraint);
+                    constraints.Add(columnKey, MutuallyExclusiveConstraint);
+                    constraints.Add(boxKey, MutuallyExclusiveConstraint);
 
                     row = row.RotateThrough();
                     column = column.RotateThrough();
@@ -128,16 +156,28 @@ namespace PC0_k_visualizer.Scenes
             Children.Add(_mainSurface);
         }
 
+        public override bool ProcessKeyboard(Keyboard keyboard)
+        {
+            if (keyboard.IsKeyPressed(Keys.Space))
+                solve = true;
+            if (keyboard.IsKeyPressed(Keys.S))
+                solve = false;
+            return base.ProcessKeyboard(keyboard);
+        }
+
+
+
         public override void Update(TimeSpan delta)
         {
-            for(int i = 0; i < 2; i++)
-                solver.SolveStep();
+            if (solve)
+                if (!solver.SolveStep())
+                    solve = false;
             for (int i = 0; i < 81; i++)
             {
                 var xy = ItoXY(i);
                 cellSurfaces[xy.y, xy.x].DrawDomain(domains[i]);
             }
-
+            base.Update(delta);
         }
 
         List<int>[] GetDomains()
@@ -200,6 +240,27 @@ namespace PC0_k_visualizer.Scenes
                 for (int i = 1; i <= 9; i++)
                     if (!list.Contains(i))
                         return false;
+                return true;
+            };
+        }
+
+        bool MutuallyExclusiveConstraint(List<int> list)
+        {
+            for (int i = 0; i < list.Count; i++)
+                for (int j = 0; j < list.Count; j++)
+                    if (i != j && list[i] == list[j])
+                        return false;
+            return true;
+        }
+
+        Func<List<int>, bool> MutuallyExclusiveConstraint()
+        {
+            return (list) =>
+            {
+                for (int i = 0; i < list.Count; i++)
+                    for (int j = 0; j < list.Count; j++)
+                        if (i != j && list[i] == list[j])
+                            return false;
                 return true;
             };
         }

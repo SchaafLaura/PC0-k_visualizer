@@ -23,6 +23,11 @@ namespace PC0
             return rng.Next(s.Count);
         }
 
+        public static int RandomIndex<T>(this List<T> l)
+        {
+            return rng.Next(l.Count);
+        }
+
         public static bool IsEmpty<T>(this IEnumerable<T> s)
         {
             return s.Count() == 0;
