@@ -9,12 +9,13 @@ namespace PC0
         Dictionary<VariableList<int>, Func<List<T>, bool>> constraints;
         HashSet<VariableList<int>> workList;
 
-        //Dictionary<int, T> fixedVariables = new();
         T?[] fixedVariables;
 
         // the number of constraints that need to be satisfied at the same time
         int maxPaths;
         List<VariableList<int>> paths = new();
+
+        int recursiondepth = 0;
 
         /// <summary>
         /// Initializes a PC0-k Solver.
@@ -56,7 +57,7 @@ namespace PC0
                 return true;
             var workingPath = workList.ElementAt(workList.RandomIndex());
             workList.Remove(workingPath);
-
+            recursiondepth = 0;
             if (PathReduce(workingPath, new List<T>()))
             {
                 if (domains[workingPath[0]].IsEmpty())
@@ -106,7 +107,6 @@ namespace PC0
         {
             if(depth == 0 && k == 0)
             {
-                //fixedVariables.Clear();
                 for (int i = 0; i < fixedVariables.Length; i++)
                     fixedVariables[i] = null;
 
@@ -129,7 +129,6 @@ namespace PC0
                 {
                     if (fixedVariables[path[i]] is null)
                     {
-                        //fixedVariables.Add(path[i], fixedValues[i]);
                         fixedVariables[path[i]] = fixedValues[i];
                         added.Add(path[i]);
                     }
@@ -139,7 +138,6 @@ namespace PC0
 
                 for (int i = 0; i < added.Count; i++)
                     fixedVariables[added[i]] = null;
-                    //fixedVariables.Remove(added[i]);
                 return valid;
             }
 
@@ -235,10 +233,6 @@ namespace PC0
 
         private List<T> GetDomain(int i)
         {
-            /*if (!fixedVariables.ContainsKey(i))
-                return domains[i];
-            return new List<T> { fixedVariables[i] };*/
-
             if (fixedVariables[i] is null)
                 return domains[i];
             else
