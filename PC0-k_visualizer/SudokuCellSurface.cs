@@ -2,6 +2,20 @@
 {
     internal class SudokuCellSurface : ScreenSurface
     {
+        static float redHue;
+        static float greenHue;
+        static float hueStep;
+
+        static SudokuCellSurface()
+        {
+            var red = new Color(1.0f, 0.0f, 0.0f);
+            var green = new Color(0.0f, 1.0f, 0.0f);
+
+            redHue = red.GetHSLHue();
+            greenHue = green.GetHSLHue();
+            hueStep = (greenHue - redHue) / 9;
+        }
+
         public SudokuCellSurface(int width, int height) : base(width, height)
         {
             this.DrawBox(new Rectangle(new Point(0, 0), new Point(width-1, height-1)),
@@ -10,6 +24,12 @@
 
         public void DrawDomain(List<int> domain)
         {
+            var hue = greenHue - domain.Count * hueStep;
+            var col = Color.FromHSL(hue, 1, 0.5f);
+            this.DrawBox(new Rectangle(new Point(0, 0), new Point(Width - 1, Height - 1)),
+                                ShapeParameters.CreateStyledBoxThin(col));
+
+
             this.Clear(new Rectangle(1, 1, Width - 2, Height - 2));
             if (domain.Count != 1)
             {

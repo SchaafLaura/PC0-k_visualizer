@@ -96,6 +96,110 @@ namespace PC0
             return true;
         }
 
+        //testing to see what the function would look like for a single path without recursion
+        private bool testing(VariableList<int> path)
+        {
+            
+            var changed = false;
+
+            var pathAsNodes = new List<Node>(path.Count);
+            var values = new List<T>(path.Count);
+
+            for(int i = 0; i < path.Count; i++)
+                pathAsNodes.Add(new Node(
+                    Path:       0,
+                    PathIndex:  i,
+                    Variable:   path[i],
+                    IsPathEnd:  i == path.Count - 1));
+
+            var currentNodeIndex = 0;
+            Node currentNode;
+
+            while (true)
+            {
+                currentNode = pathAsNodes[currentNodeIndex];
+
+                var currentNodeDomain = GetDomain(currentNode.Variable);
+                currentNode.DomainIndex += 1;
+
+                if(currentNode.DomainIndex >= currentNodeDomain.Count)
+                {
+                    if (currentNodeIndex == 0)
+                        return changed;
+                    currentNode.DomainIndex = -1;
+                    currentNodeIndex--;
+                    continue;
+                }
+                values[currentNode.PathIndex] = GetDomain(currentNode.Variable)[currentNode.DomainIndex];
+
+                if (currentNode.IsPathEnd)
+                {
+                    if(Consistent(path, values))
+                    {
+                        while(currentNodeIndex != 0)
+                            pathAsNodes[currentNodeIndex--].DomainIndex = -1;
+                        GetDomain(path[0]).RemoveAt(pathAsNodes[0].DomainIndex);
+                        continue;
+                    }
+                    else
+                    {
+                        currentNode.DomainIndex = -1;
+                        currentNodeIndex--;
+                        continue;
+                    }
+                }
+
+
+
+
+
+
+            }
+
+
+        }
+
+        private bool NonRecursivePathReduce(VariableList<int> path)
+        {
+            paths.Clear();
+            paths.Add(path);
+            ChooseOtherPaths();
+
+            var linearConstraintPath = new List<Node>();
+            var values = new List<T>[paths.Count];
+            for (int i = 0; i < paths.Count; i++)
+            {
+                values[i] = new List<T>(paths[i].Count);
+                for (int j = 0; j < paths[i].Count; j++)
+                    linearConstraintPath.Add(new Node(
+                        Path: i,
+                        PathIndex: j,
+                        Variable: paths[i][j],
+                        IsPathEnd: j == paths[i].Count - 1));
+            }
+
+            var currentNode = 0;
+            Node node;
+            while (true)
+            {
+                node = linearConstraintPath[currentNode];
+                node.DomainIndex += 1;
+
+                // if end of current path -> prove consistant -> move on or backwards
+
+                // if end of last path -> prove consistant -> bubble up or backwards
+
+
+
+
+
+
+
+            }
+
+
+        }
+
         /// <summary>
         /// Removes all impossible values in the domain of the variable path[0]
         /// </summary>

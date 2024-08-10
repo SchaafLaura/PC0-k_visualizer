@@ -152,7 +152,7 @@ namespace PC0_k_visualizer.Scenes
                     box = box.RotateThrough();
                 }
             }
-            solver = new Solver<int>(2, domains, unaryConstraints, constraints);
+            solver = new Solver<int>(1, domains, unaryConstraints, constraints);
             Children.Add(_mainSurface);
         }
 
