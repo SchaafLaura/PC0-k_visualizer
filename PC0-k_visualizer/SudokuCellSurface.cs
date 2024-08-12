@@ -7,6 +7,7 @@
         static float hueStep;
 
         static Color invalidColor = new Color(1.0f, 0.0f, 1.0f);
+        static Color pencilMarkColor;
 
         static SudokuCellSurface()
         {
@@ -16,6 +17,8 @@
             redHue = red.GetHSLHue();
             greenHue = green.GetHSLHue();
             hueStep = (greenHue - redHue) / 9;
+
+            pencilMarkColor = Color.Gray;
         }
 
         public SudokuCellSurface(int width, int height) : base(width, height)
@@ -27,7 +30,7 @@
         public void DrawDomain(List<int> domain)
         {
             var hue = greenHue - domain.Count * hueStep;
-            var col = Color.FromHSL(hue, 1, 0.5f);
+            var col = Color.FromHSL(hue, 0.4f, 0.5f);
 
             if (domain.Count == 0)
                 col = invalidColor;
@@ -45,7 +48,7 @@
                     for (int i = 1; i <= 3; i++)
                     {
                         if (domain.Contains(k))
-                            this.SetCellAppearance(i, j, new ColoredGlyph(Color.Yellow, Color.Transparent, k.ToString()[0]));
+                            this.SetCellAppearance(i, j, new ColoredGlyph(pencilMarkColor, Color.Transparent, k.ToString()[0]));
                         else
                             this.SetCellAppearance(i, j, new ColoredGlyph(Color.Transparent, Color.Transparent, ' '));
                         k++;

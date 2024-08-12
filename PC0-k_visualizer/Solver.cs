@@ -3,6 +3,12 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace PC0
 {
+    enum Reason
+    {
+        TOO_WEAK,
+        INVALID,
+        FINISHED
+    }
     internal class Solver<T> where T : struct
     {
         List<T>[] domains;
@@ -16,7 +22,7 @@ namespace PC0
         int maxPaths;
         List<VariableList<int>> paths = new();
 
-        int recursiondepth = 0;
+        public Reason? FailedToSolveReason { get; private set; } = null;
 
         /// <summary>
         /// Initializes a PC0-k Solver.
@@ -55,14 +61,24 @@ namespace PC0
         public bool SolveStep()
         {
             if (workList.IsEmpty())
+            {
+                FailedToSolveReason = Reason.FINISHED;
+                foreach(var domain in domains)
+                    if(domain.Count > 1)
+                        FailedToSolveReason = Reason.TOO_WEAK;
                 return false;
+            }
+                
             var workingPath = workList.ElementAt(workList.RandomIndex());
             workList.Remove(workingPath);
-            recursiondepth = 0;
             if (MultiplePathTest(workingPath))
             {
                 if (domains[workingPath[0]].IsEmpty())
+                {
+                    FailedToSolveReason = Reason.INVALID;
                     return false; // failed to solve
+                }
+                    
 
                 foreach (var path in GetPaths(workingPath[0]))
                     if (!path.Equals(workingPath))
@@ -82,7 +98,7 @@ namespace PC0
                 var workingPath = workList.ElementAt(workList.RandomIndex());
                 workList.Remove(workingPath);
 
-                if (PathReduce(workingPath, new List<T>()))
+                if (MultiplePathTest(workingPath))
                 {
                     if (domains[workingPath[0]].IsEmpty())
                         return false; // failed to solve
@@ -93,7 +109,6 @@ namespace PC0
                 }
             }
             while (!workList.IsEmpty());
-            ;
             return true;
         }
 
@@ -236,152 +251,6 @@ namespace PC0
             }
         }
 
-
-        private bool testing(VariableList<int> path)
-        {
-            // value that will get returned
-            var changed = false;
-
-            // nicer datastructure for walking the constraint path
-            var pathAsNodes = new List<Node>(path.Count);
-
-            // values to use in Consistant(path, values)
-            var values = new List<T>(path.Count);
-
-            // set up nodes
-            for (int i = 0; i < path.Count; i++)
-            {
-                pathAsNodes.Add(new Node(
-                    Path:       0,
-                    PathIndex:  i,
-                    Variable:   path[i],
-                    IsPathEnd:  i == path.Count - 1));
-
-                // list values need to be initialized because they will be overridden using indexing []
-                values.Add(default);
-            }
-
-            // the actual cell we are checking the domain of
-            var rootNode = pathAsNodes[0];
-            var rootDomain = GetDomain(rootNode.Variable);
-
-            var currentNodeIndex = 0;
-            Node currentNode;
-            List<T> currentNodeDomain;
-            while (true)
-            {
-                currentNode = pathAsNodes[currentNodeIndex];
-                currentNodeDomain = GetDomain(currentNode.Variable);
-
-                currentNode.DomainIndex++;
-                // if we run out of values for the current cell
-                if (currentNode.DomainIndex >= currentNodeDomain.Count)
-                {
-                    // no more values to check in initial domain
-                    if (currentNodeIndex == 0)
-                        return changed;
-
-                    // if we run out of values to make the current value in the root node work
-                    if(currentNodeIndex == 1)
-                    {
-                        rootDomain.RemoveAt(rootNode.DomainIndex);
-                        rootNode.DomainIndex--;
-                        changed = true;
-                    }
-
-                    currentNode.DomainIndex = -1;
-                    currentNodeIndex--;
-                    continue;
-                } 
-
-                values[currentNodeIndex] = currentNodeDomain[currentNode.DomainIndex];
-                if (currentNode.IsPathEnd)
-                {
-                    // if the current path is consistant, it means that the current value of the root node is valid/satisfiable
-                    if(Consistent(path, values))
-                    {
-                        // go back to root node
-                        while (currentNodeIndex > 0)
-                        {
-                            pathAsNodes[currentNodeIndex].DomainIndex = -1;
-                            currentNodeIndex--;
-                        }
-                    }
-                    // if not consistant, keep searching for consistant path
-                    continue;
-                }
-                currentNodeIndex++;
-            }
-        }
-
-        /// <summary>
-        /// Removes all impossible values in the domain of the variable path[0]
-        /// </summary>
-        /// <param name="path">The starting constraint</param>
-        /// <param name="fixedValues">Fixed values along the "path". Should be new List() when called from outside this function</param>
-        /// <param name="depth">The position along the path, should be 0 when called from outside this function</param>
-        /// <returns>true, if at least one value was removed from the domain of path[0], flase otherwise.</returns>
-        private bool PathReduce(VariableList<int> path, List<T> fixedValues, int depth = 0, int k = 0)
-        {
-            if(depth == 0 && k == 0)
-            {
-                for (int i = 0; i < fixedVariables.Length; i++)
-                    fixedVariables[i] = null;
-
-                paths.Clear();
-                paths.Add(path);
-                ChooseOtherPaths();
-            }
-
-            if (path.Count == fixedValues.Count)
-            {
-                if (k == (paths.Count - 1))
-                    return Consistent(path, fixedValues);
-
-                if (!Consistent(path, fixedValues))
-                    return false;
-
-                List<int> added = new();
-                // fix current values
-                for (int i = 0; i < path.Count; i++)
-                {
-                    if (fixedVariables[path[i]] is null)
-                    {
-                        fixedVariables[path[i]] = fixedValues[i];
-                        added.Add(path[i]);
-                    }
-                }
-
-                var valid = PathReduce(paths[k + 1], new List<T>(), 0, k + 1);
-
-                for (int i = 0; i < added.Count; i++)
-                    fixedVariables[added[i]] = null;
-                return valid;
-            }
-
-            var domain = GetDomain(path[depth]);
-            var changed = false;
-            for (int i = domain.Count - 1; i >= 0; i--)
-            {
-                var v = domain[i];
-                fixedValues.Add(v);
-                bool valid = PathReduce(path, fixedValues, depth + 1, k);
-                fixedValues.RemoveAt(fixedValues.Count - 1);
-
-                if (valid && (depth != 0 || (k == (paths.Count-1) && depth == 0)))
-                    return true;
-
-                if (!valid && depth == 0 && k == 0)
-                {
-                    changed = true;
-                    domain.Remove(v);
-                }
-            }
-            if(depth == 0 && k == 0)
-                return changed;   
-            return false;
-        }
-
         /// <summary>
         /// Applies unary constraints to each variable
         /// </summary>
@@ -411,6 +280,11 @@ namespace PC0
             }
         }
 
+        /// <summary>
+        /// Expects a path in the "paths" variable.
+        /// Fills up "paths" with others, that overlap at least one other in the List
+        /// No other paths will contain paths[0][0] or be the "same" constraint in disguise
+        /// </summary>
         private void ChooseOtherPaths()
         {
             var possiblePaths = new List<VariableList<int>>();
@@ -449,6 +323,11 @@ namespace PC0
             }
         }
 
+        /// <summary>
+        /// Gets the domain of a variable, or a list with a single value in it, if the variable is currently fixed
+        /// </summary>
+        /// <param name="i">The variable of the domain</param>
+        /// <returns>The domain of the variable</returns>
         private List<T> GetDomain(int i)
         {
             if (fixedVariables[i] is null)
@@ -471,6 +350,7 @@ namespace PC0
                     ret.Add(c.Key);
             return ret;
         }
+
         /// <summary>
         /// Checks if a list of values is consistent with a constraint
         /// </summary>

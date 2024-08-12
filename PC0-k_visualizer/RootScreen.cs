@@ -21,16 +21,7 @@ namespace PC0_k_visualizer.Scenes
             // Create a surface that's the same size as the screen.
             _mainSurface = new ScreenSurface(GameSettings.GAME_WIDTH, GameSettings.GAME_HEIGHT);
 
-            var boundingBox = new Rectangle(
-                _mainSurface.Position.X, _mainSurface.Position.Y,
-                _mainSurface.Width, _mainSurface.Height);
-            _mainSurface.DrawBox(boundingBox, ShapeParameters.CreateStyledBoxThick(Color.Red));
-
-            _mainSurface.DrawLine(new Point(16, 1), new Point(16, 47), 11 * 16 + 10, Color.Red);
-            _mainSurface.DrawLine(new Point(32, 1), new Point(32, 47), 11 * 16 + 10, Color.Red);
-
-            _mainSurface.DrawLine(new Point(1, 16), new Point(47, 16), 12 * 16 + 13, Color.Red);
-            _mainSurface.DrawLine(new Point(1, 32), new Point(47, 32), 12 * 16 + 13, Color.Red);
+            
 
             cellSurfaces = new SudokuCellSurface[9, 9];
             Random rng = new Random();
@@ -83,8 +74,6 @@ namespace PC0_k_visualizer.Scenes
                 {0, 6, 0,  9, 0, 1,  0, 2, 0 },
                 {7, 0, 0,  0, 0, 0,  0, 0, 8 },
             };
-
-
 
             // ????????? 2
             /* var board = new int[,]
@@ -195,6 +184,7 @@ namespace PC0_k_visualizer.Scenes
             }
             solver = new Solver<int>(RECURSIONDEPTH, domains, unaryConstraints, constraints);
             Children.Add(_mainSurface);
+            DrawOutline();
         }
 
         public override bool ProcessKeyboard(Keyboard keyboard)
@@ -208,31 +198,51 @@ namespace PC0_k_visualizer.Scenes
 
         public override void Update(TimeSpan delta)
         {
-            
-            /*int solveSteps = 1;
-            if (solve)
+            if (solve && !solver.SolveStep())
             {
-                for (int i = 0; i < solveSteps && solve; i++)
-                    solve = solver.SolveStep();
-            }*/
-
-            if (solve)
-            {
-                if (!solver.SolveStep())
-                {
-                    RECURSIONDEPTH++;
-                    solver = new Solver<int>(RECURSIONDEPTH, domains, unaryConstraints, constraints);
-                }
+                if (solver.FailedToSolveReason == Reason.TOO_WEAK)
+                    solver = new Solver<int>(RECURSIONDEPTH++, domains, unaryConstraints, constraints);
+                else
+                    solve = false;
             }
 
 
-                
+            DrawOutline();
             for (int i = 0; i < 81; i++)
             {
                 var xy = ItoXY(i);
                 cellSurfaces[xy.x, xy.y].DrawDomain(domains[i]);
             }
             base.Update(delta);
+        }
+
+        private void DrawOutline()
+        {
+            var red = new Color(1.0f, 0.0f, 0.0f);
+            var green = new Color(0.0f, 1.0f, 0.0f);
+
+            var redHue = red.GetHSLHue();
+            var greenHue = green.GetHSLHue();
+            var hueStep = (greenHue - redHue) / (9*9);
+
+            int n = 81;
+            foreach (var d in domains)
+                n -= d.Count == 1 ? 1 : 0;
+
+            var hue = greenHue - n * hueStep;
+            var col = Color.FromHSL(hue, 0.4f, 0.5f);
+
+
+            var boundingBox = new Rectangle(
+                _mainSurface.Position.X, _mainSurface.Position.Y,
+                _mainSurface.Width, _mainSurface.Height);
+            _mainSurface.DrawBox(boundingBox, ShapeParameters.CreateStyledBoxThick(col));
+
+            _mainSurface.DrawLine(new Point(16, 1), new Point(16, 47), 11 * 16 + 10, col);
+            _mainSurface.DrawLine(new Point(32, 1), new Point(32, 47), 11 * 16 + 10, col);
+
+            _mainSurface.DrawLine(new Point(1, 16), new Point(47, 16), 12 * 16 + 13, col);
+            _mainSurface.DrawLine(new Point(1, 32), new Point(47, 32), 12 * 16 + 13, col);
         }
 
         List<int>[] GetDomains()
