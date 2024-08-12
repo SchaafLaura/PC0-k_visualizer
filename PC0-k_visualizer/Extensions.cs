@@ -6,9 +6,14 @@ using System.Threading.Tasks;
 
 namespace PC0
 {
+    internal static class Util
+    {
+        public static Random RNG = new Random();
+    }
+
     internal static class Extensions
     {
-        static Random rng = new Random();
+        //static Random rng = new Random();
         public static VariableList<T> RotateThrough<T>(this VariableList<T> list)
         {
             var L = new VariableList<T>();
@@ -20,12 +25,12 @@ namespace PC0
 
         public static int RandomIndex<T>(this HashSet<T> s)
         {
-            return rng.Next(s.Count);
+            return Util.RNG.Next(s.Count);
         }
 
         public static int RandomIndex<T>(this List<T> l)
         {
-            return rng.Next(l.Count);
+            return Util.RNG.Next(l.Count);
         }
 
         public static bool IsEmpty<T>(this IEnumerable<T> s)
@@ -37,7 +42,7 @@ namespace PC0
         {
             for(int i = 0; i < list.Count; i++)
             {
-                var index = rng.Next(list.Count);
+                var index = Util.RNG.Next(list.Count);
                 var val = list[index];
                 list.RemoveAt(index);
                 list.Add(val);

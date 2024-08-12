@@ -1,5 +1,7 @@
 ﻿using System.Data.SqlTypes;
 using System.Diagnostics.CodeAnalysis;
+using System.IO;
+using System.Reflection.Metadata.Ecma335;
 
 namespace PC0
 {
@@ -20,6 +22,7 @@ namespace PC0
 
         // the number of constraints that need to be satisfied at the same time
         int maxPaths;
+        int numberOfUniquePaths;
         List<VariableList<int>> paths = new();
 
         public Reason? FailedToSolveReason { get; private set; } = null;
@@ -52,6 +55,7 @@ namespace PC0
         {
             MakeInitialDomainsConsistant();
             AddPathsToWorkList();
+            CalculateUniqueIDs();
         }
 
         /// <summary>
@@ -71,6 +75,7 @@ namespace PC0
                 
             var workingPath = workList.ElementAt(workList.RandomIndex());
             workList.Remove(workingPath);
+
             if (MultiplePathTest(workingPath))
             {
                 if (domains[workingPath[0]].IsEmpty())
@@ -78,12 +83,22 @@ namespace PC0
                     FailedToSolveReason = Reason.INVALID;
                     return false; // failed to solve
                 }
-                    
 
                 foreach (var path in GetPaths(workingPath[0]))
                     if (!path.Equals(workingPath))
                         workList.Add(path);
             }
+
+            // idk if this is even a good optimization to do tbh...
+            if (domains[workingPath[0]].Count == 1)
+            {
+                for (int i = constraints.Keys.Count - 1; i >= 0; i--)
+                    if (constraints.Keys.ElementAt(i)[0] == workingPath[0])
+                        constraints.Remove(constraints.Keys.ElementAt(i));
+                CalculateUniqueIDs();
+                return true;
+            }
+
             return true;
         }
 
@@ -281,47 +296,56 @@ namespace PC0
         }
 
         /// <summary>
+        /// Counts unique IDs in constraints.keys
+        /// </summary>
+        private void CalculateUniqueIDs()
+        {
+            var foundIDs = new List<int>();
+            foreach (var p in constraints.Keys)
+                if (!foundIDs.Contains(p.ID))
+                    foundIDs.Add(p.ID);
+            numberOfUniquePaths = foundIDs.Count;
+        }
+
+        /// <summary>
         /// Expects a path in the "paths" variable.
         /// Fills up "paths" with others, that overlap at least one other in the List
         /// No other paths will contain paths[0][0] or be the "same" constraint in disguise
         /// </summary>
         private void ChooseOtherPaths()
         {
-            var possiblePaths = new List<VariableList<int>>();
-            foreach(var path in constraints.Keys)
+            var alreadyTriedIDs = new List<int>();
+
+            while (true)
             {
-                if(path is null) 
-                    continue;
+                if (paths.Count == maxPaths + 1)
+                    break;
 
-                // if contains original variable
-                if (path.Contains(paths[0][0])) 
-                    continue;
+                if (alreadyTriedIDs.Count >= numberOfUniquePaths)
+                    break;
 
-                // if same id as other one in paths
-                var valid = true;
-                foreach (var otherPath in possiblePaths)
-                    if (path.ID == otherPath.ID) { valid = false; break; }
-                if (!valid) 
+                var randomPath = constraints.Keys.ElementAt(Util.RNG.Next(constraints.Keys.Count));
+                if (alreadyTriedIDs.Contains(randomPath.ID))
+                    continue;
+                alreadyTriedIDs.Add(randomPath.ID);
+                
+                if (randomPath.Contains(paths[0][0]))
                     continue;
 
                 var overLapsAtLeastOneOtherPath = false;
-                foreach(var otherPath in paths)
-                    foreach (var x in otherPath)
-                        if (path.Contains(x)) { overLapsAtLeastOneOtherPath = true; break; }
-                if (!overLapsAtLeastOneOtherPath) 
+                foreach (var p in paths)
+                    foreach (var x in p)
+                        if (randomPath.Contains(x)) { overLapsAtLeastOneOtherPath = true; break; }
+                if (!overLapsAtLeastOneOtherPath)
                     continue;
 
-                possiblePaths.Add(path);
+                paths.Add(randomPath);
             }
 
-            int n = possiblePaths.Count;
-            for(int i = 0; i < maxPaths && i < n; i++)
-            {
-                int index = possiblePaths.RandomIndex();
-                paths.Add(possiblePaths[index]);
-                possiblePaths.RemoveAt(index);
-            }
         }
+
+
+
 
         /// <summary>
         /// Gets the domain of a variable, or a list with a single value in it, if the variable is currently fixed

@@ -60,7 +60,7 @@ namespace PC0_k_visualizer.Scenes
             constraints = new();
 
             // evil
-            var board = new int[,]
+            /*var board = new int[,]
             {
                 {1, 0, 0,  0, 0, 0,  0, 0, 3 },
                 {0, 8, 0,  3, 0, 2,  0, 1, 0 },
@@ -73,40 +73,56 @@ namespace PC0_k_visualizer.Scenes
                 {0, 0, 5,  0, 0, 0,  4, 0, 0 },
                 {0, 6, 0,  9, 0, 1,  0, 2, 0 },
                 {7, 0, 0,  0, 0, 0,  0, 0, 8 },
-            };
+            };*/
 
-            // ????????? 2
-            /* var board = new int[,]
-             {
-                 {7, 0, 0,  0, 4, 0,  0, 0, 3 },
-                 {0, 0, 0,  3, 0, 9,  0, 0, 0 },
-                 {0, 0, 6,  0, 7, 0,  5, 0, 0 },
+            // excessive
+            /*var board = new int[,]
+            {
+                {9, 0, 0,  3, 0, 0,  2, 0, 7 },
+                {0, 0, 3,  0, 0, 9,  0, 0, 0 },
+                {0, 4, 0,  0, 1, 0,  0, 0, 3 },
 
-                 {0, 5, 0,  0, 0, 0,  0, 4, 0 },
-                 {6, 0, 3,  0, 9, 0,  2, 0, 7 },
-                 {0, 8, 0,  0, 0, 0,  0, 9, 0 },
+                {5, 0, 0,  8, 0, 0,  0, 6, 0 },
+                {0, 0, 4,  0, 0, 0,  5, 0, 0 },
+                {0, 6, 0,  0, 0, 5,  0, 0, 1 },
 
-                 {0, 0, 5,  0, 6, 0,  9, 0, 0 },
-                 {0, 0, 0,  8, 0, 3,  0, 0, 0 },
-                 {8, 0, 0,  0, 5, 0,  0, 0, 1 },
-             };*/
+                {2, 0, 0,  0, 8, 0,  0, 4, 0 },
+                {0, 0, 0,  5, 0, 0,  8, 0, 0 },
+                {8, 0, 1,  0, 0, 3,  0, 0, 6 },
+            };*/
+
+            // the end.
+            /*var board = new int[,]
+            {
+                {8, 0, 0,  0, 0, 0,  0, 0, 0 },
+                {0, 0, 3,  6, 0, 0,  0, 0, 0 },
+                {0, 7, 0,  0, 9, 0,  2, 0, 0 },
+
+                {0, 5, 0,  0, 0, 7,  0, 0, 0 },
+                {0, 0, 0,  0, 4, 5,  7, 0, 0 },
+                {0, 0, 0,  1, 0, 0,  0, 3, 0 },
+
+                {0, 0, 1,  0, 0, 0,  0, 6, 8 },
+                {0, 0, 8,  5, 0, 0,  0, 1, 0 },
+                {0, 9, 0,  0, 0, 0,  4, 0, 0 },
+            };*/
 
 
             // extreme
-            /*var board = new int[,]
+            var board = new int[,]
             {
-                {0, 0, 0,  0, 0, 0,  0, 0, 0 },
-                {6, 0, 0,  0, 3, 0,  0, 0, 4 },
-                {0, 0, 2,  5, 0, 0,  0, 0, 8 },
-            
-                {3, 0, 0,  0, 0, 5,  8, 0, 7 },
-                {7, 0, 0,  1, 0, 0,  0, 0, 0 },
-                {8, 0, 0,  2, 0, 0,  0, 0, 6 },
-            
-                {0, 0, 6,  0, 0, 1,  0, 4, 0 },
-                {0, 0, 9,  4, 0, 0,  0, 0, 5 },
-                {0, 0, 0,  0, 0, 0,  1, 7, 0 },
-            };*/
+                {2, 0, 0,  0, 0, 0,  0, 0, 5 },
+                {0, 8, 0,  2, 0, 9,  0, 1, 0 },
+                {0, 0, 7,  0, 0, 0,  8, 0, 0 },
+
+                {0, 2, 0,  7, 0, 3,  0, 4, 0 },
+                {0, 0, 0,  0, 9, 0,  0, 0, 0 },
+                {0, 4, 0,  1, 0, 2,  0, 7, 0 },
+
+                {0, 0, 6,  0, 0, 0,  7, 0, 0 },
+                {0, 7, 0,  8, 0, 5,  0, 2, 0 },
+                {5, 0, 0,  0, 0, 0,  0, 0, 9 },
+            };
 
             // medium
             /*var board = new int[,]
@@ -125,7 +141,7 @@ namespace PC0_k_visualizer.Scenes
             };*/
 
             // very easy
-            /*var board = new int[,]
+           /* var board = new int[,]
             {
                 {6, 8, 7,  2, 4, 3,  1, 9, 5 },
                 {9, 0, 3,  0, 6, 0,  2, 0, 7 },
@@ -201,11 +217,13 @@ namespace PC0_k_visualizer.Scenes
             if (solve && !solver.SolveStep())
             {
                 if (solver.FailedToSolveReason == Reason.TOO_WEAK)
-                    solver = new Solver<int>(RECURSIONDEPTH++, domains, unaryConstraints, constraints);
+                {
+                    RECURSIONDEPTH += 1;
+                    solver = new Solver<int>(RECURSIONDEPTH, domains, unaryConstraints, constraints);
+                }
                 else
                     solve = false;
             }
-
 
             DrawOutline();
             for (int i = 0; i < 81; i++)
@@ -213,6 +231,8 @@ namespace PC0_k_visualizer.Scenes
                 var xy = ItoXY(i);
                 cellSurfaces[xy.x, xy.y].DrawDomain(domains[i]);
             }
+
+            _mainSurface.Print(0, 0, RECURSIONDEPTH.ToString());
             base.Update(delta);
         }
 
