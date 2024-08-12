@@ -58,7 +58,7 @@ namespace PC0
             var workingPath = workList.ElementAt(workList.RandomIndex());
             workList.Remove(workingPath);
             recursiondepth = 0;
-            if (PathReduce(workingPath, new List<T>()))
+            if (testing(workingPath)/*PathReduce(workingPath, new List<T>())*/)
             {
                 if (domains[workingPath[0]].IsEmpty())
                     return false; // failed to solve
@@ -99,105 +99,79 @@ namespace PC0
         //testing to see what the function would look like for a single path without recursion
         private bool testing(VariableList<int> path)
         {
-            
+            // value that will get returned
             var changed = false;
 
+            // nicer datastructure for walking the constraint path
             var pathAsNodes = new List<Node>(path.Count);
+
+            // values to use in Consistant(path, values)
             var values = new List<T>(path.Count);
 
-            for(int i = 0; i < path.Count; i++)
+            // set up nodes
+            for (int i = 0; i < path.Count; i++)
+            {
                 pathAsNodes.Add(new Node(
                     Path:       0,
                     PathIndex:  i,
                     Variable:   path[i],
                     IsPathEnd:  i == path.Count - 1));
 
+                // list values need to be initialized because they will be overridden using indexing []
+                values.Add(default);
+            }
+
+            // the actual cell we are checking the domain of
+            var rootNode = pathAsNodes[0];
+            var rootDomain = GetDomain(rootNode.Variable);
+
             var currentNodeIndex = 0;
             Node currentNode;
-
+            List<T> currentNodeDomain;
             while (true)
             {
                 currentNode = pathAsNodes[currentNodeIndex];
+                currentNodeDomain = GetDomain(currentNode.Variable);
 
-                var currentNodeDomain = GetDomain(currentNode.Variable);
-                currentNode.DomainIndex += 1;
-
-                if(currentNode.DomainIndex >= currentNodeDomain.Count)
+                currentNode.DomainIndex++;
+                // if we run out of values for the current cell
+                if (currentNode.DomainIndex >= currentNodeDomain.Count)
                 {
+                    // no more values to check in initial domain
                     if (currentNodeIndex == 0)
                         return changed;
+
+                    // if we run out of values to make the current value in the root node work
+                    if(currentNodeIndex == 1)
+                    {
+                        rootDomain.RemoveAt(rootNode.DomainIndex);
+                        rootNode.DomainIndex--;
+                        changed = true;
+                    }
+
                     currentNode.DomainIndex = -1;
                     currentNodeIndex--;
                     continue;
-                }
-                values[currentNode.PathIndex] = GetDomain(currentNode.Variable)[currentNode.DomainIndex];
+                } 
 
+                values[currentNodeIndex] = currentNodeDomain[currentNode.DomainIndex];
                 if (currentNode.IsPathEnd)
                 {
+                    // if the current path is consistant, it means that the current value of the root node is valid/satisfiable
                     if(Consistent(path, values))
                     {
-                        while(currentNodeIndex != 0)
-                            pathAsNodes[currentNodeIndex--].DomainIndex = -1;
-                        GetDomain(path[0]).RemoveAt(pathAsNodes[0].DomainIndex);
-                        continue;
+                        // go back to root node
+                        while (currentNodeIndex > 0)
+                        {
+                            pathAsNodes[currentNodeIndex].DomainIndex = -1;
+                            currentNodeIndex--;
+                        }
                     }
-                    else
-                    {
-                        currentNode.DomainIndex = -1;
-                        currentNodeIndex--;
-                        continue;
-                    }
+                    // if not consistant, keep searching for consistant path
+                    continue;
                 }
-
-
-
-
-
-
+                currentNodeIndex++;
             }
-
-
-        }
-
-        private bool NonRecursivePathReduce(VariableList<int> path)
-        {
-            paths.Clear();
-            paths.Add(path);
-            ChooseOtherPaths();
-
-            var linearConstraintPath = new List<Node>();
-            var values = new List<T>[paths.Count];
-            for (int i = 0; i < paths.Count; i++)
-            {
-                values[i] = new List<T>(paths[i].Count);
-                for (int j = 0; j < paths[i].Count; j++)
-                    linearConstraintPath.Add(new Node(
-                        Path: i,
-                        PathIndex: j,
-                        Variable: paths[i][j],
-                        IsPathEnd: j == paths[i].Count - 1));
-            }
-
-            var currentNode = 0;
-            Node node;
-            while (true)
-            {
-                node = linearConstraintPath[currentNode];
-                node.DomainIndex += 1;
-
-                // if end of current path -> prove consistant -> move on or backwards
-
-                // if end of last path -> prove consistant -> bubble up or backwards
-
-
-
-
-
-
-
-            }
-
-
         }
 
         /// <summary>
