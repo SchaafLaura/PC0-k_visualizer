@@ -1,9 +1,4 @@
-﻿using System.Data.SqlTypes;
-using System.Diagnostics.CodeAnalysis;
-using System.IO;
-using System.Reflection.Metadata.Ecma335;
-
-namespace PC0
+﻿namespace PC0
 {
     enum Reason
     {
@@ -45,9 +40,7 @@ namespace PC0
             this.unaryConstraints = unaryConstraints;
             this.constraints = constraints;
             workList = new HashSet<VariableList<int>>();
-
             fixedVariables = new T?[domains.Count()];
-
             Setup();
         }
         
@@ -76,7 +69,7 @@ namespace PC0
             var workingPath = workList.ElementAt(workList.RandomIndex());
             workList.Remove(workingPath);
 
-            if (MultiplePathTest(workingPath))
+            if (OverlappingPathReduce(workingPath))
             {
                 if (domains[workingPath[0]].IsEmpty())
                 {
@@ -96,9 +89,7 @@ namespace PC0
                     if (constraints.Keys.ElementAt(i)[0] == workingPath[0])
                         constraints.Remove(constraints.Keys.ElementAt(i));
                 CalculateUniqueIDs();
-                return true;
             }
-
             return true;
         }
 
@@ -113,7 +104,7 @@ namespace PC0
                 var workingPath = workList.ElementAt(workList.RandomIndex());
                 workList.Remove(workingPath);
 
-                if (MultiplePathTest(workingPath))
+                if (OverlappingPathReduce(workingPath))
                 {
                     if (domains[workingPath[0]].IsEmpty())
                         return false; // failed to solve
@@ -126,9 +117,13 @@ namespace PC0
             while (!workList.IsEmpty());
             return true;
         }
-
         
-        private bool MultiplePathTest(VariableList<int> initialPath)
+        /// <summary>
+        /// Makes the domain of the path consistant with its constraint and up to maxPaths other constraints
+        /// </summary>
+        /// <param name="initialPath">Constraint to make the domain of the variable initialPath[0] consistant with</param>
+        /// <returns>true if the domain changed, false otherwise</returns>
+        private bool OverlappingPathReduce(VariableList<int> initialPath)
         {
             // choose overlapping constraints
             paths.Clear();
@@ -169,6 +164,7 @@ namespace PC0
             var rootNode = pathAsNodes[0][0];
             var rootDomain = GetDomain(rootNode.Variable);
 
+            // get outta here if cell already solved or invalid
             if (rootDomain.Count == 0 || rootDomain.Count == 1)
                 return false;
 
@@ -223,7 +219,6 @@ namespace PC0
                     {
                         if(currentPathIndex < paths.Count - 1) // go one path deeper if we can
                         {
-
                             // fix current values
                             for(int i = 0; i < paths[currentPathIndex].Count; i++)
                             {
@@ -343,9 +338,6 @@ namespace PC0
             }
 
         }
-
-
-
 
         /// <summary>
         /// Gets the domain of a variable, or a list with a single value in it, if the variable is currently fixed

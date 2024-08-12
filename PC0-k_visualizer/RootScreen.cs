@@ -21,15 +21,10 @@ namespace PC0_k_visualizer.Scenes
             // Create a surface that's the same size as the screen.
             _mainSurface = new ScreenSurface(GameSettings.GAME_WIDTH, GameSettings.GAME_HEIGHT);
 
-            
-
             cellSurfaces = new SudokuCellSurface[9, 9];
             Random rng = new Random();
             var xoff = 0;
             var yoff = 0;
-
-            
-
 
             for (int bi = 0; bi < 3; bi++)
             {
@@ -155,7 +150,6 @@ namespace PC0_k_visualizer.Scenes
                 {0, 0, 1,  3, 7, 4,  5, 0, 0 },
                 {0, 2, 6,  1, 5, 8,  0, 0, 9 },
             };*/
-
 
             for (int x = 0; x < 9; x++)
             {
