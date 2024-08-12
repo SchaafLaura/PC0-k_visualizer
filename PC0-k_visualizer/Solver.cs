@@ -1,4 +1,5 @@
 ﻿using System.Data.SqlTypes;
+using System.Diagnostics.CodeAnalysis;
 
 namespace PC0
 {
@@ -54,11 +55,11 @@ namespace PC0
         public bool SolveStep()
         {
             if (workList.IsEmpty())
-                return true;
+                return false;
             var workingPath = workList.ElementAt(workList.RandomIndex());
             workList.Remove(workingPath);
             recursiondepth = 0;
-            if (testing(workingPath)/*PathReduce(workingPath, new List<T>())*/)
+            if (MultiplePathTest(workingPath))
             {
                 if (domains[workingPath[0]].IsEmpty())
                     return false; // failed to solve
@@ -96,7 +97,146 @@ namespace PC0
             return true;
         }
 
-        //testing to see what the function would look like for a single path without recursion
+        
+        private bool MultiplePathTest(VariableList<int> initialPath)
+        {
+            // choose overlapping constraints
+            paths.Clear();
+            paths.Add(initialPath);
+            ChooseOtherPaths();
+
+            // value that will get returned
+            var changed = false;
+
+            // nicer datastructure for walking the constraint paths
+            var pathAsNodes = new List<Node>[paths.Count];
+            var fixedByPath = new List<int>[paths.Count];
+
+            // values to use in Consistent(path, values)
+            // actual call will be somthing like Consistent(paths[currentPathIndex], values[currentPathIndex]);
+            var values = new List<T>[paths.Count];
+
+            // set up nodes
+            for(int i = 0; i < paths.Count; i++)
+            {
+                pathAsNodes[i] = new List<Node>();
+                values[i] = new List<T>();
+                fixedByPath[i] = new List<int>();
+                for(int j = 0; j < paths[i].Count; j++)
+                {
+                    pathAsNodes[i].Add(new Node(
+                        Path:       i,                          // index into paths
+                        PathIndex:  j,                          // index into paths[i]
+                        Variable:   paths[i][j],                // constraint variable
+                        IsPathEnd:  j == paths[i].Count - 1     // is end of current paths[i]
+                        ));
+                    // list values need to be initialized because they will be overridden using indexing []
+                    values[i].Add(default);
+                }
+            }
+
+            // the actual cell we are checking the domain of
+            var rootNode = pathAsNodes[0][0];
+            var rootDomain = GetDomain(rootNode.Variable);
+
+            if (rootDomain.Count == 0 || rootDomain.Count == 1)
+                return false;
+
+            var currentNodeIndex = 0;
+            Node currentNode;
+            List<T> currentNodeDomain;
+
+            var currentPathIndex = 0;
+            while (true)
+            {
+                // grab current node and advance one step in the domain
+                currentNode = pathAsNodes[currentPathIndex][currentNodeIndex];
+                currentNodeDomain = GetDomain(currentNode.Variable);
+                currentNode.DomainIndex++;
+
+                // ran out of values to check in current node
+                if(currentNode.DomainIndex == currentNodeDomain.Count)
+                {
+                    if(currentNodeIndex == 0)
+                    {
+                        if (currentPathIndex == 0)
+                            return changed;
+
+                        currentNode.DomainIndex = -1;
+                        currentPathIndex--;
+                        currentNodeIndex = paths[currentPathIndex].Count - 1;
+
+                        // un-fixing variables
+                        foreach (var variable in fixedByPath[currentPathIndex])
+                            fixedVariables[variable] = null;
+                        fixedByPath[currentPathIndex].Clear();
+
+                        continue;
+                    }
+                    // if we run out of values to make the current value in the root node work
+                    if (currentNodeIndex == 1 && currentPathIndex == 0)
+                    {
+                        rootDomain.RemoveAt(rootNode.DomainIndex);
+                        rootNode.DomainIndex--;
+                        changed = true;
+                    }
+                    currentNode.DomainIndex = -1;
+                    currentNodeIndex--;
+                    continue;
+                }
+
+                values[currentPathIndex][currentNodeIndex] = currentNodeDomain[currentNode.DomainIndex];
+                
+                if (currentNode.IsPathEnd)
+                {
+                    if (Consistent(paths[currentPathIndex], values[currentPathIndex]))
+                    {
+                        if(currentPathIndex < paths.Count - 1) // go one path deeper if we can
+                        {
+
+                            // fix current values
+                            for(int i = 0; i < paths[currentPathIndex].Count; i++)
+                            {
+                                var variable = paths[currentPathIndex][i];
+                                if (fixedVariables[variable] is not null)
+                                    continue;
+                                var value = values[currentPathIndex][i];
+                                fixedVariables[variable] = value;
+                                fixedByPath[currentPathIndex].Add(variable);
+                            }
+
+                            currentPathIndex++;
+                            currentNodeIndex = 0;
+                        }
+                        else // otherwise go up to rootnode, resetting everything
+                        {
+                            // clear all fixed values
+                            foreach (var fixedPath in fixedByPath)
+                            {
+                                for (int i = 0; i < fixedPath.Count; i++)
+                                    fixedVariables[fixedPath[i]] = null;
+                                fixedPath.Clear();
+                            }
+
+                            while(currentNodeIndex > 0 || currentPathIndex > 0)
+                            {
+                                pathAsNodes[currentPathIndex][currentNodeIndex].DomainIndex = -1;
+                                currentNodeIndex--;
+                                if(currentNodeIndex < 0 && currentPathIndex > 0)
+                                {
+                                    currentPathIndex--;
+                                    currentNodeIndex = pathAsNodes[currentPathIndex].Count - 1;
+                                }
+                            }
+                        }
+                    }
+                    continue;
+                }
+                currentNodeIndex++;
+            }
+        }
+
+
         private bool testing(VariableList<int> path)
         {
             // value that will get returned

@@ -6,6 +6,8 @@
         static float greenHue;
         static float hueStep;
 
+        static Color invalidColor = new Color(1.0f, 0.0f, 1.0f);
+
         static SudokuCellSurface()
         {
             var red = new Color(1.0f, 0.0f, 0.0f);
@@ -26,6 +28,10 @@
         {
             var hue = greenHue - domain.Count * hueStep;
             var col = Color.FromHSL(hue, 1, 0.5f);
+
+            if (domain.Count == 0)
+                col = invalidColor;
+
             this.DrawBox(new Rectangle(new Point(0, 0), new Point(Width - 1, Height - 1)),
                                 ShapeParameters.CreateStyledBoxThin(col));
 

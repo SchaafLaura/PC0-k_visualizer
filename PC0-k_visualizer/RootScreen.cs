@@ -10,9 +10,12 @@ namespace PC0_k_visualizer.Scenes
         private ScreenSurface _mainSurface;
         private SudokuCellSurface[,] cellSurfaces;
         List<int>[] domains;
+        Dictionary<int, Func<int, bool>> unaryConstraints;
+        Dictionary<VariableList<int>, Func<List<int>, bool>> constraints;
         Solver<int> solver;
 
         bool solve = false;
+        int RECURSIONDEPTH = 0;
         public RootScreen()
         {
             // Create a surface that's the same size as the screen.
@@ -33,6 +36,10 @@ namespace PC0_k_visualizer.Scenes
             Random rng = new Random();
             var xoff = 0;
             var yoff = 0;
+
+            
+
+
             for (int bi = 0; bi < 3; bi++)
             {
                 for (int bj = 0; bj < 3; bj++)
@@ -47,10 +54,6 @@ namespace PC0_k_visualizer.Scenes
                             var cellSurface = new SudokuCellSurface(5, 5);
                             
                             cellSurface.Position = new Point(x0, y0);
-                            /*if (rng.Next(100) < 2)
-                                cellSurface.DrawDomain(new List<int>() { rng.Next(10) });
-                            else
-                                cellSurface.DrawDomain(new List<int>() { 1, 2, 3, 4, 5, 6, 7, 8, 9 });*/
                             cellSurfaces[i + bi * 3, j + bj * 3] = cellSurface;
                             Children.Add(cellSurface);
                         }
@@ -62,28 +65,46 @@ namespace PC0_k_visualizer.Scenes
             }
 
             domains = GetDomains();
-            Dictionary<int, Func<int, bool>> unaryConstraints = new();
-            Dictionary<VariableList<int>, Func<List<int>, bool>> constraints = new();
+            unaryConstraints = new();
+            constraints = new();
 
-            // ?????????
-            /*var board = new int[,]
+            // evil
+            var board = new int[,]
             {
-                {7, 0, 0,  0, 4, 0,  0, 0, 3 },
-                {0, 0, 0,  3, 0, 9,  0, 0, 0 },
-                {0, 0, 6,  0, 7, 0,  5, 0, 0 },
+                {1, 0, 0,  0, 0, 0,  0, 0, 3 },
+                {0, 8, 0,  3, 0, 2,  0, 1, 0 },
+                {0, 0, 4,  0, 0, 0,  5, 0, 0 },
 
-                {0, 5, 0,  0, 0, 0,  0, 4, 0 },
-                {6, 0, 3,  0, 9, 0,  2, 0, 7 },
-                {0, 8, 0,  0, 0, 0,  0, 9, 0 },
+                {0, 1, 0,  2, 0, 9,  0, 5, 0 },
+                {0, 0, 0,  0, 1, 0,  0, 0, 0 },
+                {0, 3, 0,  4, 0, 6,  0, 8, 0 },
 
-                {0, 0, 5,  0, 6, 0,  9, 0, 0 },
-                {0, 0, 0,  8, 0, 3,  0, 0, 0 },
-                {8, 0, 0,  0, 5, 0,  0, 0, 1 },
-            };*/
+                {0, 0, 5,  0, 0, 0,  4, 0, 0 },
+                {0, 6, 0,  9, 0, 1,  0, 2, 0 },
+                {7, 0, 0,  0, 0, 0,  0, 0, 8 },
+            };
+
+
+
+            // ????????? 2
+            /* var board = new int[,]
+             {
+                 {7, 0, 0,  0, 4, 0,  0, 0, 3 },
+                 {0, 0, 0,  3, 0, 9,  0, 0, 0 },
+                 {0, 0, 6,  0, 7, 0,  5, 0, 0 },
+
+                 {0, 5, 0,  0, 0, 0,  0, 4, 0 },
+                 {6, 0, 3,  0, 9, 0,  2, 0, 7 },
+                 {0, 8, 0,  0, 0, 0,  0, 9, 0 },
+
+                 {0, 0, 5,  0, 6, 0,  9, 0, 0 },
+                 {0, 0, 0,  8, 0, 3,  0, 0, 0 },
+                 {8, 0, 0,  0, 5, 0,  0, 0, 1 },
+             };*/
 
 
             // extreme
-            var board = new int[,]
+            /*var board = new int[,]
             {
                 {0, 0, 0,  0, 0, 0,  0, 0, 0 },
                 {6, 0, 0,  0, 3, 0,  0, 0, 4 },
@@ -96,7 +117,7 @@ namespace PC0_k_visualizer.Scenes
                 {0, 0, 6,  0, 0, 1,  0, 4, 0 },
                 {0, 0, 9,  4, 0, 0,  0, 0, 5 },
                 {0, 0, 0,  0, 0, 0,  1, 7, 0 },
-            };
+            };*/
 
             // medium
             /*var board = new int[,]
@@ -114,16 +135,35 @@ namespace PC0_k_visualizer.Scenes
                 {0, 2, 6,  0, 5, 0,  0, 0, 0 },
             };*/
 
+            // very easy
+            /*var board = new int[,]
+            {
+                {6, 8, 7,  2, 4, 3,  1, 9, 5 },
+                {9, 0, 3,  0, 6, 0,  2, 0, 7 },
+                {0, 5, 4,  0, 9, 0,  8, 0, 3 },
+
+                {4, 7, 0,  0, 8, 0,  0, 1, 0 },
+                {0, 0, 2,  4, 3, 7,  0, 0, 0 },
+                {5, 0, 0,  9, 1, 2,  6, 7, 4 },
+
+                {0, 4, 0,  6, 2, 9,  7, 8, 1 },
+                {0, 0, 1,  3, 7, 4,  5, 0, 0 },
+                {0, 2, 6,  1, 5, 8,  0, 0, 9 },
+            };*/
+
 
             for (int x = 0; x < 9; x++)
             {
                 for (int y = 0; y < 9; y++)
                 {
-                    if (board[x, y] == 0)
+                    // have to flip x and y for indexing into board[] here, because e.g. ROW 3 COLUMN 8 is indexed like this: board[3, 8]
+                    // even tho the coordinates of that cell are (8, 3)
+                    var val = board[y, x];
+                    if (val == 0)
                         continue;
 
                     var index = XYtoI(x, y);
-                    domains[index] = new List<int> { board[x, y] };
+                    domains[index] = new List<int> { val };
                 }
             }
 
@@ -139,9 +179,10 @@ namespace PC0_k_visualizer.Scenes
 
                 for (int j = 0; j < 9; j++)
                 {
-                    var rowKey = new VariableList<int>(row, rowID, "row " + i + ", cell " + j);
-                    var columnKey = new VariableList<int>(column, columnID, "column " + i + ", cell " + j);
-                    var boxKey = new VariableList<int>(box, boxID, "box " + i + ", cell " + j);
+                    int cell = j == 0 ? 0 : 9 - j;
+                    var rowKey = new VariableList<int>(row, rowID, "row " + i + ", cell " + cell);
+                    var columnKey = new VariableList<int>(column, columnID, "column " + i + ", cell " + cell);
+                    var boxKey = new VariableList<int>(box, boxID, "box " + i + ", cell " + cell);
 
                     constraints.Add(rowKey, MutuallyExclusiveConstraint);
                     constraints.Add(columnKey, MutuallyExclusiveConstraint);
@@ -152,7 +193,7 @@ namespace PC0_k_visualizer.Scenes
                     box = box.RotateThrough();
                 }
             }
-            solver = new Solver<int>(0, domains, unaryConstraints, constraints);
+            solver = new Solver<int>(RECURSIONDEPTH, domains, unaryConstraints, constraints);
             Children.Add(_mainSurface);
         }
 
@@ -165,17 +206,31 @@ namespace PC0_k_visualizer.Scenes
             return base.ProcessKeyboard(keyboard);
         }
 
-
-
         public override void Update(TimeSpan delta)
         {
+            
+            /*int solveSteps = 1;
             if (solve)
+            {
+                for (int i = 0; i < solveSteps && solve; i++)
+                    solve = solver.SolveStep();
+            }*/
+
+            if (solve)
+            {
                 if (!solver.SolveStep())
-                    solve = false;
+                {
+                    RECURSIONDEPTH++;
+                    solver = new Solver<int>(RECURSIONDEPTH, domains, unaryConstraints, constraints);
+                }
+            }
+
+
+                
             for (int i = 0; i < 81; i++)
             {
                 var xy = ItoXY(i);
-                cellSurfaces[xy.y, xy.x].DrawDomain(domains[i]);
+                cellSurfaces[xy.x, xy.y].DrawDomain(domains[i]);
             }
             base.Update(delta);
         }
@@ -231,8 +286,6 @@ namespace PC0_k_visualizer.Scenes
             return ret;
         }
 
-
-
         Func<List<int>, bool> ContainsAllConstraint()
         {
             return (list) =>
@@ -265,7 +318,6 @@ namespace PC0_k_visualizer.Scenes
             };
         }
 
-
         int XYtoI(int x, int y)
         {
             return x + y * 9;
@@ -275,9 +327,5 @@ namespace PC0_k_visualizer.Scenes
         {
             return (i % 9, i / 9);
         }
-
-
-
-
     }
 }
