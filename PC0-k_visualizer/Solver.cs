@@ -212,52 +212,58 @@
                 }
 
                 values[currentPathIndex][currentNodeIndex] = currentNodeDomain[currentNode.DomainIndex];
-                
-                if (currentNode.IsPathEnd)
+
+                if(!currentNode.IsPathEnd)
                 {
-                    if (Consistent(paths[currentPathIndex], values[currentPathIndex]))
-                    {
-                        if(currentPathIndex < paths.Count - 1) // go one path deeper if we can
-                        {
-                            // fix current values
-                            for(int i = 0; i < paths[currentPathIndex].Count; i++)
-                            {
-                                var variable = paths[currentPathIndex][i];
-                                if (fixedVariables[variable] is not null)
-                                    continue;
-                                var value = values[currentPathIndex][i];
-                                fixedVariables[variable] = value;
-                                fixedByPath[currentPathIndex].Add(variable);
-                            }
-
-                            currentPathIndex++;
-                            currentNodeIndex = 0;
-                        }
-                        else // otherwise go up to rootnode, resetting everything
-                        {
-                            // clear all fixed values
-                            foreach (var fixedPath in fixedByPath)
-                            {
-                                for (int i = 0; i < fixedPath.Count; i++)
-                                    fixedVariables[fixedPath[i]] = null;
-                                fixedPath.Clear();
-                            }
-
-                            while(currentNodeIndex > 0 || currentPathIndex > 0)
-                            {
-                                pathAsNodes[currentPathIndex][currentNodeIndex].DomainIndex = -1;
-                                currentNodeIndex--;
-                                if(currentNodeIndex < 0 && currentPathIndex > 0)
-                                {
-                                    currentPathIndex--;
-                                    currentNodeIndex = pathAsNodes[currentPathIndex].Count - 1;
-                                }
-                            }
-                        }
-                    }
+                    currentNodeIndex++;
                     continue;
                 }
-                currentNodeIndex++;
+
+                if (!Consistent(paths[currentPathIndex], values[currentPathIndex]))
+                    continue;
+
+                // at this point the current node is the end of the path and the path is consistent
+
+                if(currentPathIndex < paths.Count - 1) // go one path deeper if we can
+                {
+                    // fix current values
+                    for(int i = 0; i < paths[currentPathIndex].Count; i++)
+                    {
+                        var variable = paths[currentPathIndex][i];
+                        if (fixedVariables[variable] is not null)
+                            continue;
+                        var value = values[currentPathIndex][i];
+                        fixedVariables[variable] = value;
+                        fixedByPath[currentPathIndex].Add(variable);
+                    }
+
+                    // down we go
+                    currentPathIndex++;
+                    currentNodeIndex = 0;
+                    continue;
+                }
+                // otherwise go up to rootnode, resetting everything
+                
+                // clear all fixed values
+                foreach (var fixedPath in fixedByPath)
+                {
+                    for (int i = 0; i < fixedPath.Count; i++)
+                        fixedVariables[fixedPath[i]] = null;
+                    fixedPath.Clear();
+                }
+
+                // step backwards until we hit the root
+                while(currentNodeIndex > 0 || currentPathIndex > 0)
+                {
+                    pathAsNodes[currentPathIndex][currentNodeIndex].DomainIndex = -1;
+                    currentNodeIndex--;
+                    if(currentNodeIndex < 0 && currentPathIndex > 0)
+                    {
+                        currentPathIndex--;
+                        currentNodeIndex = pathAsNodes[currentPathIndex].Count - 1;
+                    }
+                }
+                
             }
         }
 

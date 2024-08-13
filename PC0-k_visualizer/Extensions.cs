@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace PC0
+﻿namespace PC0
 {
     internal static class Util
     {
@@ -13,7 +7,6 @@ namespace PC0
 
     internal static class Extensions
     {
-        //static Random rng = new Random();
         public static VariableList<T> RotateThrough<T>(this VariableList<T> list)
         {
             var L = new VariableList<T>();
@@ -48,11 +41,5 @@ namespace PC0
                 list.Add(val);
             }
         }
-
-
     }
-
-    
-
-
 }
