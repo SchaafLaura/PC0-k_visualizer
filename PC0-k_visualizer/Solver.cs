@@ -223,7 +223,6 @@
                     continue;
 
                 // at this point the current node is the end of the path and the path is consistent
-
                 if(currentPathIndex < paths.Count - 1) // go one path deeper if we can
                 {
                     // fix current values
