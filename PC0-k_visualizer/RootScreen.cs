@@ -1,7 +1,5 @@
 ﻿using PC0;
-using SadConsole;
 using SadConsole.Input;
-using System.Net.Http.Headers;
 
 namespace PC0_k_visualizer.Scenes
 {
@@ -56,7 +54,7 @@ namespace PC0_k_visualizer.Scenes
             constraints = new();
 
             // evil
-            var board = new int[,]
+            /*var board = new int[,]
             {
                 {1, 0, 0,  0, 0, 0,  0, 0, 3 },
                 {0, 8, 0,  3, 0, 2,  0, 1, 0 },
@@ -69,7 +67,7 @@ namespace PC0_k_visualizer.Scenes
                 {0, 0, 5,  0, 0, 0,  4, 0, 0 },
                 {0, 6, 0,  9, 0, 1,  0, 2, 0 },
                 {7, 0, 0,  0, 0, 0,  0, 0, 8 },
-            };
+            };*/
 
             // excessive
             /*var board = new int[,]
@@ -88,7 +86,7 @@ namespace PC0_k_visualizer.Scenes
             };*/
 
             // the end.
-            /*var board = new int[,]
+            var board = new int[,]
             {
                 {8, 0, 0,  0, 0, 0,  0, 0, 0 },
                 {0, 0, 3,  6, 0, 0,  0, 0, 0 },
@@ -101,7 +99,7 @@ namespace PC0_k_visualizer.Scenes
                 {0, 0, 1,  0, 0, 0,  0, 6, 8 },
                 {0, 0, 8,  5, 0, 0,  0, 1, 0 },
                 {0, 9, 0,  0, 0, 0,  4, 0, 0 },
-            };*/
+            };
 
 
             // extreme
@@ -207,20 +205,35 @@ namespace PC0_k_visualizer.Scenes
             return base.ProcessKeyboard(keyboard);
         }
 
-
-
-
-        public override void Update(TimeSpan delta)
+        Task<bool> solveStepTask;
+        private async Task<bool> Solve()
         {
-            if (solve && !solver.SolveStep())
+            var ret = await Task.Run(()=>solver.SolveStep());
+            return ret;
+        }
+
+        public override async void Update(TimeSpan delta)
+        {
+            if (solve)
             {
-                if (solver.FailedToSolveReason == Reason.TOO_WEAK)
+                if (solveStepTask is null)
+                    solveStepTask = Solve();
+
+                if (solveStepTask.IsCompleted)
                 {
-                    RECURSIONDEPTH += 1;
-                    solver = new Solver<int>(RECURSIONDEPTH, domains, unaryConstraints, constraints);
+                    var success = solveStepTask.Result;
+                    if (!success)
+                    {
+                        if (solver.FailedToSolveReason == Reason.TOO_WEAK)
+                        {
+                            RECURSIONDEPTH += 1;
+                            solver = new Solver<int>(RECURSIONDEPTH, domains, unaryConstraints, constraints);
+                        }
+                        else
+                            solve = false;
+                    }
+                    solveStepTask = Solve();
                 }
-                else
-                    solve = false;
             }
 
             DrawOutline();
